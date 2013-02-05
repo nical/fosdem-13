@@ -1,0 +1,547 @@
+<!DOCTYPE HTML>
+<html lang="en-US" >
+<!-- 
+  class="fade"
+  ^ You can control a few things with the <html> element's classes:
+
+  "fade"      - smooth fade between slides
+  "nonumbers" - remove the slide numbering after the progress bar
+-->
+
+<head>
+  <title>Asynchronous Compositing in Gecko</title>
+  <!-- 
+    ^ Don't forget a good title - they show up as bookmarks and in Google 
+  -->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=1274, user-scalable=no">
+  <link rel="stylesheet" href="themes/mozilla/styles/style.css">
+  <style type="text/css">
+    /* Add your own styles here */
+  </style>
+</head>
+
+
+
+<body class="list">
+
+  <header class="caption">
+    <h1>Asynchronous compositing in Gecko</h1>
+    <p class="footer">Nicolas Silva, <a href="http://twitter.com/">@nicalsilva</a> or <a href="mailto:">nical@mozilla.com</a></p>
+  </header>
+
+<!-- 
+  The following is a slide, it needs a class of "slide" and it doesn't 
+  hurt to keep the right semantic elements in there, too.
+  IMPORTANT: each slide needs its own unique ID - this will become its
+  URL and this is how this slide system works!
+-->
+
+  <div id="cover" class="slide"><div>
+    <section>
+      <header>
+        <h2>Asynchronous compositing in Gecko</h2>
+      </header>
+
+      <figure class="middle">
+      <img src="pictures/firefox.svg" 
+           alt="Red panda (Firefox)">
+      </figure>
+
+
+      <small class="byline">
+        Nicolas Silva, Mozilla, FOSDEM, Bruxelles, 2013
+      </small>
+    <footer class="notes">
+    </footer>
+    </section>
+  </div></div>
+
+  <div id="domtree" class="slide"><div>
+    <section>
+      <header>
+        <h2>The DOM tree</h2>
+      </header>
+
+      <img src="pictures/dom.png" class="left"
+           alt="HTML structure">
+
+      <ul>
+        <li>Exposed to content</li>
+        <li>Describes the "flow" of the page</li>
+      </ul> 
+      <footer class="notes">
+      </footer>
+    </section>
+  </div></div>
+
+  <div id="frametree" class="slide"><div>
+    <section>
+      <header>
+        <h2>The Frame tree</h2>
+      </header>
+
+      <img src="pictures/frames.png" class="left"
+           alt="HTML structure">
+
+
+      <ul>
+        <li>Represents what is going to be rendered</li>
+        <li>Contains computed positions and size</li>
+        <li>Reflow: action of computing the positions and sizes</li>
+        <li>(in WebKit: "Relayout")</li>
+        </li>
+      </ul> 
+      <footer class="notes">
+      </footer>
+    </section>
+  </div></div>
+
+  <div id="displaylists" class="slide"><div>
+    <section>
+      <header>
+        <h2>Display lists</h2>
+      </header>
+      <ul>
+        <li>A list of drawing commands</li>
+        <li>Generated from the frame tree</li>
+      </ul> 
+      <footer class="notes">
+      </footer>
+    </section>
+  </div></div>
+
+  <div id="drawing" class="slide"><div>
+    <section>
+      <header>
+        <h2>Drawing</h2>
+      </header>
+      <ul>
+        <li>(legacy) Thebes API (cairo)</li>
+        <li>(new) Moz2D API (with several backends)</li>
+      </ul> 
+      <footer class="notes">
+      </footer>
+    </section>
+  </div></div>
+
+  <div id="layertree" class="slide"><div>
+    <section>
+      <header>
+        <h2>The Layer tree</h2>
+      </header>
+      <ul>
+        <li>The page is split into intermediary surfaces called "layers"</li>
+        <li>We can apply transformations/effects on layers</li>
+        <li> several types of layers:
+          <ul>
+            <li>Content (Thebes) layers</li>
+            <li>Image layers</li>
+            <li>Canvas layers</li>
+            <li>Color layers</li>
+            <li>Container layers</li>
+            <li>...</li>
+          </ul>
+        </li>
+      </ul> 
+      <footer class="notes">
+      </footer>
+    </section>
+  </div></div>
+
+  <div id="cat" class="slide"><div>
+    <section>
+      <header>
+        <h2>A cat</h2>
+      </header>
+        <figure class="frame middle swing">
+        <img src="pictures/cat.jpg" 
+             alt="a swinging cat in its own layer">
+        </figure>
+      
+      <small class="credits">
+          Photo by Clarista
+      </small>
+    <footer class="notes">
+    </footer>
+    </section>
+  </div></div>
+
+
+  <div id="compositing" class="slide"><div>
+    <section>
+      <header>
+        <h2>Compositing</h2>
+      </header>
+
+      <img src="pictures/compositing.png" class="left"
+           alt="compositing">
+
+      <ul>
+        <li>Flatten the layers into the final image</li>
+        <li>Can be done on the content thread</li>
+        <li>Way more awesome if done off the content thread! (OMTC)</li>
+      </ul> 
+      <footer class="notes">
+      </footer>
+    </section>
+  </div></div>
+
+
+  <div id="layerbackends" class="slide"><div>
+    <section>
+      <header>
+        <h2>Layer backends</h2>
+      </header>
+      <ul>
+        <li>several layer backends:
+        <ul>
+          <li>Basic (in software)</li>
+          <li>OpenGL</li>
+          <li>D3D9</li>
+          <li>D3D10</li>
+          <li>D3D11</li>
+          <li>...</li>
+        </ul>
+          <li>ImageLayerOGL, ImageLayerD3D9, BasicImageLayer, ... :(
+      </ul> 
+      <footer class="notes">
+      </footer>
+    </section>
+  </div></div>
+
+  <div id="tiling" class="slide"><div>
+    <section>
+      <header>
+        <h2>Tiling</h2>
+      </header>
+      <img src="pictures/tiling.png" class="left"
+           alt="Tiling">
+      
+      <ul>
+        <li>Split layers into smaller textures</li>
+        <li>Display them as fast as possible</li>
+        <li>Levels of detail</li>
+        <li>Quickly get content on the screen</li>
+      </ul> 
+      <footer class="notes">
+      </footer>
+    </section>
+  </div></div>
+
+  <div id="omtc" class="slide"><div>
+    <section>
+      <header>
+        <h2>Off-main-thread compositing</h2>
+      </header>
+      <ul>
+        <li>The content thread is often busy processing JS or layout</li>
+        <li>Compositing is performed in a dedicated thread</li>
+        <li>Resonsiveness
+          <ul>
+            <li> Panning and zooming </li>
+            <li> Animations </li>
+            <li> Video playback </li>
+          </ul>
+        </li>
+      </ul>
+      <footer class="notes">
+      </footer>
+    </section>
+  </div></div>
+
+  <div id="ipc" class="slide"><div>
+    <section>
+      <header>
+        <h2>IPC</h2>
+      </header>
+      <ul>
+        <li>IPDL: powerful cross-process communication framework</li>
+        <li>Message passing, actors, serialization</li>
+        <li>Domain specific language (generates C++ code)</li>
+      </ul> 
+      <footer class="notes">
+      </footer>
+    </section>
+  </div></div>
+
+  <div id="ipdlsample" class="slide"><div>
+    <section>
+      <header>
+        <h2>IPDL example</h2>
+      </header>
+      <pre>
+
+      <code><b>include protocol</b> PWeb; </code>
+      <code><b>namespace</b> mozilla {</code>
+      <code><b>struct</b> Patch { </code>
+      <code>}</code>
+      <code><b>async protocol</b> PMozilla {</code>
+      <code>  <b>manager</b> PWeb;</code>
+      <code>  // messages received by PMozillaChild actor</code>
+      <code>  <b>child</b>:</code>
+      <code>  <b>async</b> FirefoxRelease(<n>uint32_t</b> version);</code>
+      <code>  // messages received by PMozillaParent actor</code>
+      <code>  <b>parent</b>:</code>
+      <code>  <b>async</b> Contribution(<b>Patch</b> aPatch);</code>
+      <code>} // protocol</code>
+      <code>} // namespace</code>
+
+      </pre>
+      <footer class="notes">
+      </footer>
+    </section>
+  </div></div>
+
+  <div id="ipdlsamplecpp" class="slide"><div>
+    <section>
+      <header>
+        <h2>IPDL example (C++)</h2>
+      </header>
+      <pre>
+
+      <code><b>#include</b> "mozilla/PMozillaParent.h"; </code>
+      <code><b>namespace</b> mozilla {</code>
+      <code><b>class</b> MozillaParent : public PMozillaParent {</code>
+      <code>  <b>public</b>:</code>
+      <code>  // override the methods called when receiving message</code>
+      <code>  <b>bool</b> RecvContribution(<n>const</b> Patch& aPatch) override;</code>
+      <code>} // class</code>
+      <code>} // namespace </code>
+
+      </pre>
+      <footer class="notes">
+      </footer>
+    </section>
+  </div></div>
+
+
+  <div id="shadowlayers" class="slide"><div>
+    <section>
+      <header>
+        <h2>Shadow layers</h2>
+      </header>
+
+      <img src="pictures/transaction.png" class="left"
+           alt="Shadow layers diagram">
+
+      <ul>
+        <li>Maintain a copy of the layer tree in the compositor process</li>
+        <li>Modifications on the shadowable layers are serialized and sent to the compositor through message passing</li>
+      </ul> 
+      <footer class="notes">
+      </footer>
+    </section>
+  </div></div>
+
+
+  <div id="oldlayersdiag" class="slide cover w"><div>
+    <section>
+        <img src="pictures/OldLayers.png" 
+             alt="Legacy layers architecture diagram">
+      <footer class="notes">
+      </footer>
+    </section>
+  </div></div>
+
+  <div id="newlayersdiag0" class="slide"><div>
+    <section>
+      <header>
+        <h2>New architecture</h2>
+      </header>
+
+      <figure class="middle">
+        <img src="pictures/layers-bbb-1.png" 
+             alt="New layers architecture: simplified">
+      </figure>
+      </footer>
+    </section>
+  </div></div>
+
+  <div id="newlayersdiag1" class="slide cover w"><div>
+    <section>
+        <img src="pictures/layers-aaa-1.png" 
+             alt="New layers architecture: interfaces">
+      <footer class="notes">
+      </footer>
+    </section>
+  </div></div>
+
+  <div id="newlayersdiag2" class="slide cover w"><div>
+    <section>
+        <img src="pictures/layers-aaa-2.png" 
+             alt="New layers architecture: backends">
+      <footer class="notes">
+      </footer>
+    </section>
+  </div></div>
+
+  <div id="newlayersdiag3" class="slide cover w"><div>
+    <section>
+        <img src="pictures/layers-aaa-3.png" 
+             alt="New layers architecture: IPDL protcols">
+      <footer class="notes">
+      </footer>
+    </section>
+  </div></div>
+
+  <div id="newlayersdiagclient" class="slide cover w"><div>
+    <section>
+        <img src="pictures/layers-client.png" 
+             alt="New layers architecture: client side">
+      <footer class="notes">
+      </footer>
+    </section>
+  </div></div>
+
+  <div id="newlayersdiagall" class="slide cover w"><div>
+    <section>
+        <img src="pictures/layers_all_big.png" 
+             alt="New layers architecture: IPDL protcols">
+      <footer class="notes">
+      </footer>
+    </section>
+  </div></div>
+
+
+  <div id="futureplans" class="slide"><div>
+    <section>
+      <header>
+        <h2>Future plans</h2>
+      </header>
+      <ul>
+        <li>Clean things up</li>
+        <li>Use OMTC on all platforms</li>
+        <li>Remove old architecture</li>
+        <li>Define a cleaner compositor API for content</li>
+        <li>Testability</li>
+        <li>Moar backends!</li>
+      </ul> 
+      <footer class="notes">
+      </footer>
+    </section>
+  </div></div>
+
+    <div id="thanks" class="slide"><div>
+    <section>
+      <header>
+        <h2>Thanks</h2>
+      </header>
+        <figure class="frame middle swing">
+        <img src="pictures/mozillaoverview/redpanda.jpg" 
+             alt="Red panda (Firefox)">
+        </figure>
+      <ul class="oneline demourl">
+        <li>Nicolas Silva</li>
+        <li>nical@mozilla.com</li>
+        <li><a href="http://twitter.com/">@nicalsilva</a></li>
+<!--        <li><a href="{slideurl}">
+          {slideurl} -->
+        </a></li>
+      </ul>
+      <small class="credits">
+        <a href="http://www.flickr.com/photos/yortw/5798336827/">
+          Photo by Yortw
+        </a>
+      </small>
+    <footer class="notes">
+    </footer>
+    </section>
+  </div></div>
+
+
+
+<!--
+  <div id="animatedlist" class="slide"><div>
+    <section>
+      <header>
+        <h2>Cute things (step by step list example)</h2>
+      </header>
+      <ul class="inner">
+        <li class="active">Puppies</li>
+        <li>Kittens</li>
+        <li>Hedgehogs</li>
+        <li>Capybara</li>
+        <li>Hippos</li>
+        <li>Koalas</li>
+        <li>Pandas</li>
+      </ul> 
+      <footer class="notes">
+      </footer>
+    </section>
+  </div></div>
+
+  <div id="shout" class="slide shout"><div>
+    <section>
+      <header>
+        <h2>Enough with the cute!</h2>
+      </header>
+      <footer class="notes">
+      </footer>
+    </section>
+  </div></div>
+
+  <div id="leftimage" class="slide"><div>
+    <section>
+      <header>
+        <h2>Left image</h2>
+      </header>
+      <img src="pictures/mozillaoverview/redpanda.jpg" class="left"
+           alt="Red panda (Firefox)">
+      <p>Oh, hai, I am not shiny but very cute!</p>
+      <small class="credits">
+        <a href="http://www.flickr.com/photos/yortw/5798336827/">
+          Photo by Yortw
+        </a>
+      </small>      
+      <footer class="notes">
+      </footer>
+    </section>
+  </div></div>
+
+    <div id="rightimage" class="slide"><div>
+    <section>
+      <header>
+        <h2>Right image</h2>
+      </header>
+      <img src="pictures/mozillaoverview/redpanda.jpg" class="right"
+           alt="Red panda (Firefox)">
+      <p>Oh, hai, I am not shiny but very cute!</p>
+      <small class="credits">
+        <a href="http://www.flickr.com/photos/yortw/5798336827/">
+          Photo by Yortw
+        </a>
+      </small>      
+      <footer class="notes">
+      </footer>
+    </section>
+  </div></div>
+
+  <div id="imageframe" class="slide"><div>
+    <section>
+      <header>
+        <h2>Image with frame</h2>
+      </header>
+      <figure class="shadow right frame">
+        <img src="pictures/mozillaoverview/redpanda.jpg" class="right"
+             alt="Red panda (Firefox)">
+      </figure>
+      <p>Oh, hai, I am not shiny but very cute!</p>
+      <small class="credits">
+        <a href="http://www.flickr.com/photos/yortw/5798336827/">
+          Photo by Yortw
+        </a>
+      </small>      
+      <footer class="notes">
+      </footer>
+    </section>
+  </div></div>
+-->
+  <div class="progress"><div></div></div>
+  <!-- 
+    ^ don't like a progress bar? just delete this DIV
+  -->
+  <script src="scripts/script.js"></script>
+  <!-- Copyright © 2010–2012 Vadim Makeev — pepelsbey.net -->
+</body>
+</html>
